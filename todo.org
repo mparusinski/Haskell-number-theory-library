@@ -1,0 +1,13 @@
+* For this project
+** DONE Create a random generator library 
+   AIM: Decouple random generation from actual algorithms
+        This should help handle issues relating to the prime number generator
+        We could indeed make the number generator smarter so it guess primes
+        better. Therefore there is potential to make the algorithm faster
+** DONE Create and use fast-if-function if it improves performance
+** TODO Prime factorisation function
+   AIM: Create a fast prime factorisation algorithm that handles 
+        massive numbers. 
+** TODO Primitive root search algorithm
+   AIM: Finds primitive root modulu n so we can create a representation 
+        for the multiplicative group Z/nZ
