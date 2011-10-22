@@ -5,14 +5,10 @@ incrementLoop :: [Int]
 incrementLoop = [6,4,2,4,2,4,6,2]
 
 trialDivision :: (Integral a) => a -> [a]
-trialDivision 0  = []
-trialDivision 1  = [1]
-trialDivision 2  = [2]
-trialDivision 3  = [3]
-trialDivision 5  = [5]
-trialDivision 7  = [7]
 trialDivision n
-    | n <= 0    = trialDivision (-n)
+    | n < 0     = trialDivision (-n)
+    | n == 0    = []
+    | n <= 7    = return n
     | rem2 == 0 = 2 : trialDivision quot2
     | rem3 == 0 = 3 : trialDivision quot3
     | rem5 == 0 = 5 : trialDivision quot5
