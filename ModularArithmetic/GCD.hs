@@ -17,10 +17,8 @@ import Standard
 
 import Data.Bits
 
--- hoping the following function will somewhat get optimized
--- euclideanDivision dividend divisor
---    = (dividend `div` divisor, dividend `mod` divisor)
-
+-- euclideanDivision should refer to an optimised 
+-- version of the euclidean division
 extendedEuclid 0 other = (other, 0, 1)
 extendedEuclid other 0 = (other, 1, 0)
 extendedEuclid number other
@@ -29,6 +27,7 @@ extendedEuclid number other
     | otherwise      = (gcd, b, a - b * quotient)
     where (quotient, remainder) = euclideanDivision number other
           (gcd, a, b)           = extendedEuclid other remainder
+
 
 
 binaryGCD 0 other = other
