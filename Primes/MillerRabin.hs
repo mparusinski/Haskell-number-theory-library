@@ -44,7 +44,9 @@ millerRabinPrimalityTest rgState candidate
     | candidate <= 3 = True
     | candidate == 4 = False
     | otherwise      = doAllWitnessTests candidateList candidate
-    where randomGenerator = RG.boundRandGenerator RG.simpleRandGenerator 2 candidate 
+    where randomGenerator = RG.boundRandGenerator RG.simpleRandGenerator 2 upBound 
+-- using the fact that small candidates speeds up the algorithm very quickly
+          upBound         = 2 ^ 32
           candidateList   = generateSetFromGenerator 20 randomGenerator rgState
 
 getSmallestNumOfBitSize :: Int -> Integer
@@ -59,10 +61,11 @@ makeIsPrimeRule rgState = Rule isPrime
 
 primeGenerator :: StdGen -> Int -> Generator StdGen Integer
 primeGenerator rgState bitSize
-    = isPrimeRule |> randomGenerator
+    = isPrimeRule |> (onlyOddRule |> randomGenerator)
     where randomGenerator = RG.boundRandGenerator RG.simpleRandGenerator low up
-          low             = getSmallestNumOfBitSize bitSize
-          up              = getSmallestNumOfBitSize (bitSize + 1)
+          onlyOddRule     = Rule (\x -> Just $ 2 * x + 1)
+          low             = getSmallestNumOfBitSize (bitSize - 1)
+          up              = 2 * low
           isPrimeRule     = makeIsPrimeRule rgState
 
 generatePrime :: Int -> IO Integer

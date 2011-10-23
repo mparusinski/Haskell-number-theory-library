@@ -14,6 +14,6 @@ Portability :  portable
 import Primes.MillerRabin
 
 main = do 
-  result <- generatePrime 2000
+  result <- generatePrime 1024
   print result
           
