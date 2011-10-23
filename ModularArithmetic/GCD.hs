@@ -11,9 +11,9 @@ Portability :  portable
 <module description starting at first column>
 -}
 
-module GCD where
+module ModularArithmetic.GCD where
 
-import Standard
+import ModularArithmetic.Standard
 
 import Data.Bits
 

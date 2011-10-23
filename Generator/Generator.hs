@@ -42,9 +42,9 @@ runGeneratorNTimes n generator state
     where (prevOutputs, prevState) = runGeneratorNTimes (n-1) generator state
           (output, newState)       = generate generator prevState
 
-getElemFromGenerator gen g 
+generateElemFromGenerator gen g 
     = fst $ generate gen g
-getListFromGenerator n gen g 
+generateListFromGenerator n gen g 
     = fst $ (runGeneratorNTimes n gen g)
 
 generateSetFromGenerator n gen state
@@ -69,4 +69,25 @@ generateSetFromGeneratorAccum n gen state
         case reshapedOuput of
           Just someOutput -> return someOutput
           Nothing         -> runGenerator (rule |> generator)
+
+makeGeneratorSkipNSteps :: Int -> Generator g a -> Generator g a
+makeGeneratorSkipNSteps 0 _ = error "Can't skip 0 steps"
+makeGeneratorSkipNSteps 1 generator
+    = generator
+makeGeneratorSkipNSteps n generator
+    = Generator $ do
+        currentState <- get
+        let (output, newState) = generate generator currentState
+        put newState
+        let newGenerator = makeGeneratorSkipNSteps (n-1) generator
+        runGenerator newGenerator
+
+combineGenerators :: Generator g a -> Generator h b -> Generator (g,h) (a,b)
+combineGenerators leftGenerator rightGenerator
+    = Generator $ do
+        (leftState, rightState) <- get
+        let (leftOutput, leftNewState)   = generate leftGenerator leftState
+        let (rightOutput, rightNewState) = generate rightGenerator rightState
+        put (leftNewState, rightNewState)
+        return (leftOutput, rightOutput)
 

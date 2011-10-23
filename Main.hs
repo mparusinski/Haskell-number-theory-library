@@ -14,7 +14,6 @@ Portability :  portable
 import Primes.MillerRabin
 
 main = do 
-  updateRandomGeneratorWithNum 3
-  result <- getRandomPrime 2000
+  result <- generatePrime 2000
   print result
           

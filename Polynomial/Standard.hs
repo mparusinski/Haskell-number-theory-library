@@ -11,7 +11,7 @@ Portability :  portable
 <module description starting at first column>
 -}
 
-module Polynomials where
+module Polynomial.Standard where
 
 data Polynomial a = Polynomial [a]
 -- for instance a x^2 + b x + c = x (a x + b) + c
@@ -41,6 +41,10 @@ degree (Polynomial cs)
 evaluateAt :: (Num a) => Polynomial a -> a -> a
 evaluateAt (Polynomial coeffs) number
     = evaluateAtHelper id coeffs number
+
+evaluateAtModular :: (Integral a) => Polynomial a -> a -> a -> a
+evaluateAtModular (Polynomial coeffs) number modulus
+    = evaluateAtHelper (flip mod modulus) coeffs number
 
 evaluateAtHelper f [] _  = 0 -- default behavior
 evaluateAtHelper f [c] _ = f c -- constant polynomial
