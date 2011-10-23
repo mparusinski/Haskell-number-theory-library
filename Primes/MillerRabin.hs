@@ -16,6 +16,7 @@ module Primes.MillerRabin where
 import qualified ModularArithmetic.PoweringAlgorithms as PA
 import ModularArithmetic.Standard
 import qualified Generator.RandomGenerator as RG
+import qualified Generator.MonotonicGenerator as MG
 import Generator.Generator
 
 import System.Random
@@ -38,16 +39,18 @@ millerRabinWitnessTest candidate witness
 doAllWitnessTests list candidate
     = all (millerRabinWitnessTest candidate) list
 
+-- using the fact that small candidates speeds up the algorithm very quickly
 millerRabinPrimalityTest :: StdGen -> Integer -> Bool
 millerRabinPrimalityTest rgState candidate
     | candidate <= 1 = False
     | candidate <= 3 = True
     | candidate == 4 = False
     | otherwise      = doAllWitnessTests candidateList candidate
-    where randomGenerator = RG.boundRandGenerator RG.simpleRandGenerator 2 upBound 
--- using the fact that small candidates speeds up the algorithm very quickly
-          upBound         = 2 ^ 32
-          candidateList   = generateSetFromGenerator 20 randomGenerator rgState
+    where randomGen     = RG.boundRandGenerator RG.simpleRandGenerator 1 upBound 
+          numOfElems    = 20
+          upBound       = (2 ^ 32) `div` (numOfElems + 1)
+          numberGen     = MG.createMonotonicGenerator MG.Positive randomGen
+          candidateList = generateListFromGenerator numOfElems numberGen (rgState,1)
 
 getSmallestNumOfBitSize :: Int -> Integer
 getSmallestNumOfBitSize bitSize
