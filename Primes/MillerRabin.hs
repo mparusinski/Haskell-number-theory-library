@@ -22,11 +22,6 @@ import System.Random
 import Data.List
 import Control.Monad
 
-witnessTest :: Integer -> Integer -> Bool
-witnessTest candidate witness
-    | even candidate = False
-    | otherwise      = millerRabinWitnessTest candidate witness
-
 millerRabinWitnessTest candidate witness
     = test1 || test2
     where (d, r) = removePowersOfTwo (candidate - 1)
@@ -40,7 +35,7 @@ millerRabinWitnessTest candidate witness
               | otherwise = evenPowersLoop newNumber (counter + 1) steps
               where newNumber = (number * number) `mod` candidate
 
-probPrimalityTest list candidate
+doAllWitnessTests list candidate
     = all (millerRabinWitnessTest candidate) list
 
 millerRabinPrimalityTest :: StdGen -> Integer -> Bool
@@ -48,7 +43,7 @@ millerRabinPrimalityTest rgState candidate
     | candidate <= 1 = False
     | candidate <= 3 = True
     | candidate == 4 = False
-    | otherwise      = probPrimalityTest candidateList candidate
+    | otherwise      = doAllWitnessTests candidateList candidate
     where randomGenerator = RG.boundRandGenerator RG.simpleRandGenerator 2 candidate 
           candidateList   = generateSetFromGenerator 20 randomGenerator rgState
 
@@ -69,3 +64,13 @@ primeGenerator rgState bitSize
           low             = getSmallestNumOfBitSize bitSize
           up              = getSmallestNumOfBitSize (bitSize + 1)
           isPrimeRule     = makeIsPrimeRule rgState
+
+generatePrime :: Int -> IO Integer
+generatePrime bitSize
+    = do RG.updateIORandomGenerator
+         stdGen1 <- getStdGen
+         let pg = primeGenerator stdGen1 bitSize
+         RG.updateIORandomGenerator
+         stdGen2 <- getStdGen
+         let (prime, stdGen3) = generate pg stdGen2
+         return prime
