@@ -1,5 +1,5 @@
 
-module Main where
+module Factoring.TrialDivision where
 
 incrementLoop :: [Int]
 incrementLoop = [6,4,2,4,2,4,6,2]
@@ -8,7 +8,10 @@ trialDivision :: (Integral a) => a -> [a]
 trialDivision n
     | n < 0     = trialDivision (-n)
     | n == 0    = []
-    | n <= 7    = return n
+    | n == 2    = return 2
+    | n == 3    = return 3
+    | n == 5    = return 5
+    | n == 7    = return 7
     | rem2 == 0 = 2 : trialDivision quot2
     | rem3 == 0 = 3 : trialDivision quot3
     | rem5 == 0 = 5 : trialDivision quot5
