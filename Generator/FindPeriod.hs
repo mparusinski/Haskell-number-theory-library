@@ -17,17 +17,19 @@ import Generator.Generator
 import Polynomial.PolynomialGenerator
 import Polynomial.Standard
 
-findStepsUntilEquality :: (Eq a) => Generator g (a,a) -> g -> Integer
-findStepsUntilEquality generator state
-    = findStepsUntilEqualityCounter generator state 1
+type Condition a = (a -> a -> Bool)
 
-findStepsUntilEqualityCounter generator state n
-    | left == right = n
-    | otherwise     = findStepsUntilEqualityCounter generator nextState (n+1)
-    where ((left, right), nextState) = generate generator state
+findStepsUntilCondition :: (Eq a) => Condition a -> Generator g (a,a) -> g -> Integer
+findStepsUntilCondition condition generator state
+    = findStepsUntilConditionCounter condition generator state 1
 
-findMultipleOfPeriod :: (Eq a) => Generator g a -> g -> Integer
-findMultipleOfPeriod turtleGenerator initialState
-    = findStepsUntilEquality doubleGenerator (initialState, initialState)
+findStepsUntilConditionCounter cond gen state n
+    | cond left right = n
+    | otherwise       = findStepsUntilConditionCounter cond gen nextState (n+1)
+    where ((left, right), nextState) = generate gen state
+
+findMultipleOfPeriod :: (Eq a) => Condition a -> Generator g a -> g -> Integer
+findMultipleOfPeriod condition turtleGenerator initialState
+    = findStepsUntilCondition condition doubleGenerator (initialState, initialState)
     where rabbitGenerator = makeGeneratorSkipNSteps 2 turtleGenerator
           doubleGenerator = combineGenerators turtleGenerator rabbitGenerator
