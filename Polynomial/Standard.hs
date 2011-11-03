@@ -66,3 +66,25 @@ pointWisePolynomialsHelper f [] (c:cs)
     = (f 0 c) : pointWisePolynomialsHelper f [] cs
 pointWisePolynomialsHelper f (c:cs) (d:ds)
     = (f c d) : pointWisePolynomialsHelper f cs ds
+
+-- TODO: Use fourier transform technique if more efficient ...
+multiplyPolynomials :: (Num a) => Polynomial a -> Polynomial a -> Polynomial a
+multiplyPolynomials (Polynomial poly1) (Polynomial poly2)
+    = Polynomial $ multiplyPolynomialsHelper poly1 poly2
+      
+scalarMultiply polynomialCoefficients constant
+    = map (constant *) polynomialCoefficients
+      
+multiplyPolynomialsHelper :: (Num a) => [a] -> [a] -> [a]
+multiplyPolynomialsHelper [] [] = error "Undefined empty polynomial"
+multiplyPolynomialsHelper [c] poly
+    = scalarMultiply poly c
+multiplyPolynomialsHelper poly [c]
+    = scalarMultiply poly c
+multiplyPolynomialsHelper (c:cs) (d:ds)
+    = foldl1 (pointWisePolynomialsHelper (+)) [constantTerm, leftTerm, rightTerm, recursiveTerm]
+    where constantTerm  = [c*d]
+          leftTerm      = scalarMultiply (0:ds) c
+          rightTerm     = scalarMultiply (0:cs) d
+          recursiveTerm = multiplyPolynomialsHelper (0:cs) (0:ds)
+          
