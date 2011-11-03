@@ -14,26 +14,40 @@ Portability :  portable
 module Polynomial.Standard where
 
 data Polynomial a = Polynomial [a]
+                    deriving (Eq)
 -- for instance a x^2 + b x + c = x (a x + b) + c
 -- where [c, b, a] 
+
+instance (Show a, Num a) => Show (Polynomial a) where
+  show poly = stringifyPolynomial poly
+         
+instance (Num a) => Num (Polynomial a) where
+  (+) = addPolynomials
+  (-) = substractPolynomials
+  (*) = multiplyPolynomials
+  negate = negatePolynomial
+  abs    = absOfPolynomial 
+  signum = Polynomial . return . fromIntegral . degree
+  fromInteger = Polynomial . return . fromInteger
 
 stringifyPolynomial (Polynomial cs)
     = stringifyPolyLoop cs 0
     where stringifyPolyLoop [] _    = ""
           stringifyPolyLoop [c] deg 
-              | c == 1    = "X^" ++ show deg
-              | otherwise = show c ++ " X^" ++ show deg
+              = show c ++ " X^" ++ show deg
           stringifyPolyLoop (c:cs) 0
-              | c == 0    = rest
-              | otherwise = this ++ rest
-              where this  = show c ++ " + "
-                    rest  = stringifyPolyLoop cs 1
+              = show c ++ " + " ++ stringifyPolyLoop cs 1
           stringifyPolyLoop (c:cs) deg
-              | c == 0    = rest
-              | c == 1    = "X^" ++ show deg ++ " + " ++ rest
-              | otherwise = this ++ rest
+              = this ++ rest
               where this  = show c ++ " X^" ++ show deg ++ " + "
                     rest  = stringifyPolyLoop cs (deg+1)
+
+negatePolynomial (Polynomial cs)
+  = Polynomial $ map negate cs
+
+-- derived from Manhattan Norm
+absOfPolynomial (Polynomial cs)
+  = Polynomial $ return . sum $ map abs cs
 
 degree (Polynomial cs)
     = length cs - 1
@@ -84,7 +98,7 @@ multiplyPolynomialsHelper poly [c]
 multiplyPolynomialsHelper (c:cs) (d:ds)
     = foldl1 (pointWisePolynomialsHelper (+)) [constantTerm, leftTerm, rightTerm, recursiveTerm]
     where constantTerm  = [c*d]
-          leftTerm      = scalarMultiply (0:ds) c
-          rightTerm     = scalarMultiply (0:cs) d
-          recursiveTerm = multiplyPolynomialsHelper (0:cs) (0:ds)
+          leftTerm      = 0 : scalarMultiply ds c
+          rightTerm     = 0 : scalarMultiply cs d
+          recursiveTerm = 0 : 0 : multiplyPolynomialsHelper cs ds
           
