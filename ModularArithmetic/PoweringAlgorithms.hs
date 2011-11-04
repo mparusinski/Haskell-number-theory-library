@@ -15,22 +15,23 @@ module ModularArithmetic.PoweringAlgorithms where
 
 import ModularArithmetic.Standard
 
-type Modifier a = (a -> a)
-
+simplePower :: (Num a, Integral b) => a -> b -> a
 simplePower a b = simplePowerGeneric id a b
+
+simplePowerModular :: (Integral a, Integral b) => a -> b -> a -> a
 simplePowerModular a b modulus 
     = simplePowerGeneric (flip mod modulus) a b
 
-simplePowerGeneric :: (Integral a) => Modifier a -> a -> a -> a
 simplePowerGeneric modif mantissa exponent
     = modif (mantissa ^ exponent) 
 
-
+fastPower :: (Num a, Integral b) => a -> b -> a
 fastPower a b = fastPowerGeneric id a b
+
+fastPowerModular :: (Integral a, Integral b) => a -> b -> a -> a
 fastPowerModular a b modulus
    = fastPowerGeneric (flip mod modulus) a b
 
-fastPowerGeneric :: Modifier Integer -> Integer -> Integer -> Integer
 fastPowerGeneric _ _ 0            = 1
 fastPowerGeneric modif mantissa 1 = modif mantissa
 fastPowerGeneric modif mantissa exponent

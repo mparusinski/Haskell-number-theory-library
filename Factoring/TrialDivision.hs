@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Description :  Module implementing trial division algorithm
+Copyright   :  (c) Michal Parusinski
+License     :  GPLv3
+
+Maintainer  :  mparusinski@gmail.com
+Stability   :  experimental
+Portability :  portable
+
+<module description starting at first column>
+-}
 
 module Factoring.TrialDivision where
 

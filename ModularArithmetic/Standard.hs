@@ -13,6 +13,7 @@ Portability :  portable
 
 module ModularArithmetic.Standard where
 
+euclideanDivision :: (Integral a) => a -> a -> (a,a)
 euclideanDivision = divMod
 
 removePowersOfTwo 0 = (0, 0)
