@@ -13,11 +13,17 @@ Portability :  portable
 
 --import Primes.MillerRabin
 
+<<<<<<< HEAD
 -- main = do 
 --   result <- generatePrime 2000
 --   print result
 
 import ModularArithmetic.GCD
+=======
+main = do 
+  result <- generatePrime 2048
+  print result
+>>>>>>> 37dfac4ce72762843c267611421aee6fbadd27f5
           
 simpleTest x y n 
     = 0 == (mod (x ^ 2 - y ^ 2) n)

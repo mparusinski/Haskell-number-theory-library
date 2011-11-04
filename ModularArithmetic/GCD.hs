@@ -29,7 +29,6 @@ extendedEuclid number other
           (gcd, a, b)           = extendedEuclid other remainder
 
 
-
 binaryGCD 0 other = other
 binaryGCD other 0 = other
 binaryGCD a b 
