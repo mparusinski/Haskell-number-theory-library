@@ -11,28 +11,27 @@ Portability :  portable
 <module description starting at first column>
 -}
 
---import Primes.MillerRabin
-
-<<<<<<< HEAD
--- main = do 
---   result <- generatePrime 2000
---   print result
-
+import Factoring.TrialDivision
 import ModularArithmetic.GCD
-=======
+
+n = 35
+
+tuples :: [(Integer, Integer)]
+tuples
+    = do
+  let list = [1..(n-1)]
+  x <- list
+  y <- list
+  return (x,y)
+
+filteringFunction :: (Integer, Integer) -> Bool
+filteringFunction (x,y)
+    = gcd == 1
+    where discriminant = (4 * x ^ 3 + 27 * y ^ 2) `mod` n
+          (gcd, a, b)  = extendedEuclid discriminant n
+
+candidates = 
+    filter filteringFunction tuples
+
 main = do 
-  result <- generatePrime 2048
-  print result
->>>>>>> 37dfac4ce72762843c267611421aee6fbadd27f5
-          
-simpleTest x y n 
-    = 0 == (mod (x ^ 2 - y ^ 2) n)
-
-bigTest n
-    = filter func list
-    where list = [(x,y) | x <- [1..(n-1)], y <- [1..(n-1)]]
-          func = (\(x,y) -> simpleTest x y n)
-
-furthermore n
-    = filter func $ bigTest n
-    where func = (\(x,y) -> 0 /= (mod (x-y) n) && 0 /= (mod (x+y) n))
+  print candidates
