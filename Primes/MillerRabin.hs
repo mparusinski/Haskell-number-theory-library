@@ -13,7 +13,8 @@ Portability :  portable
 
 module Primes.MillerRabin where
 
-import qualified ModularArithmetic.PoweringAlgorithms as PA
+import AbstractAlgebra.ModularRings
+import AbstractAlgebra.Rings
 import ModularArithmetic.Standard
 import qualified Generator.RandomGenerator as RG
 import qualified Generator.MonotonicGenerator as MG
@@ -23,18 +24,21 @@ import System.Random
 import Data.List
 import Control.Monad
 
+millerRabinWitnessTest :: Integer -> Integer -> Bool
 millerRabinWitnessTest candidate witness
     = test1 || test2
     where (d, r) = removePowersOfTwo (candidate - 1)
-          test1  = first `elem` [1,candidate-1]
+          modWit = embed witness (flip mod candidate)
+          test1  = (representant first) `elem` [1,candidate - 1]
           test2  = evenPowersLoop first 0 (r-1)
-          first  = PA.fastPowerModular witness d candidate
+          first  = mod_pow modWit d
           evenPowersLoop number counter steps
               | counter   >= steps           = False
-              | newNumber == 1               = False
-              | newNumber == (candidate - 1) = True
+              | repre     == 1               = False
+              | repre     == (candidate - 1) = True
               | otherwise = evenPowersLoop newNumber (counter + 1) steps
-              where newNumber = (number * number) `mod` candidate
+              where newNumber = mod_mult number number
+                    repre     = representant newNumber
 
 doAllWitnessTests list candidate
     = all (millerRabinWitnessTest candidate) list
