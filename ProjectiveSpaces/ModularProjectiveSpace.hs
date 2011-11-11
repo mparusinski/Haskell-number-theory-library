@@ -32,14 +32,14 @@ WARNING: This code is not pure
 -}
 
 data (Ring a) => ElementType a   = ET (IOArray Int (ModularRing a))
-data (Ring a) => ReductionType a = RT (ElementType a -> ElementType a)
+data (Ring a) => ReductionType a = RT (ElementType a -> IO (ElementType a))
 data (Ring a) => ModularProjectiveSpace a =
-     MPS { element   :: ElementType a,
+     MPS { internal  :: ElementType a,
            reduction :: ReductionType a}
      
-createProjectiveElement :: 
+createProjectivePoint :: 
   (Ring a) => [ModularRing a] -> ReductionType a -> IO (ModularProjectiveSpace a)
-createProjectiveElement modularElements reductionFunction
+createProjectivePoint modularElements reductionFunction
   = do let dimension = length modularElements 
        arr <- newArray_ (1,dimension)
        counter <- newIORef 1 
@@ -50,4 +50,41 @@ createProjectiveElement modularElements reductionFunction
        mapM_ f modularElements
        return $ MPS (ET arr) reductionFunction
 
-     
+reducePoint :: 
+  (Ring a) => ModularProjectiveSpace a -> IO (ModularProjectiveSpace a)
+reducePoint point
+  = do let (RT reductionFunction) = reduction point
+       let element = internal point
+       newElement <- reductionFunction element
+       return $ MPS newElement (RT reductionFunction)
+
+comparePoints ::
+  (Ring a) => ModularProjectiveSpace a -> ModularProjectiveSpace a -> IO Bool
+comparePoints pointA pointB 
+  = do redPointA <- reducePoint pointA
+       redPointB <- reducePoint pointB
+       let (ET coordinatesA) = internal redPointA
+       let (ET coordinatesB) = internal redPointB
+       (lowA, upA) <- getBounds coordinatesA
+       (lowB, upB) <- getBounds coordinatesB
+       if lowA /= lowB || upA /= upB 
+         then return False 
+         else do let f ix = do
+                       coordinateA <- readArray coordinatesA ix
+                       coordinateB <- readArray coordinatesB ix
+                       return $ coordinateA == coordinateB
+                 truthValues <- mapM f [lowA..upA]
+                 return $ and truthValues
+                 
+getCoordinates :: 
+  (Ring a) => ModularProjectiveSpace a -> IO [ModularRing a]
+getCoordinates point
+  = do let (ET coordinates) = internal point
+       (low, up) <- getBounds coordinates
+       mapM (readArray coordinates) [low..up]
+       
+getCoordinate ::
+  (Ring a) => Int -> ModularProjectiveSpace a -> IO (ModularRing a)
+getCoordinate ix point
+  = do let (ET coordinates) = internal point
+       readArray coordinates ix
