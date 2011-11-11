@@ -41,3 +41,20 @@ evaluateAt (MEC a b) point
   = do coordinates <- getCoordinates point
        return $ evaluateFunction a b coordinates
        
+isValidEllipticCurve (MEC x y)
+  = discri == (mod_zero embedding)
+  where embedding = ringEmbedding x
+        num_4     = embed 4 embedding
+        num_27    = embed 27 embedding
+        discri    = (mod_mult num_4 (mod_pow x 3)) `mod_add` (mod_mult num_27 (mod_pow y 2))
+
+-- cubicLaw ::
+--   (Ring a) => ModularEllipticCurve a -> ModularProjectiveSpace a -> ModularProjectiveSpace a -> IO (ModularProjectiveSpace a)
+-- cubicLaw (MEC a b) point1 point2
+--   = do areTheSame <- comparePoints point1 point2
+--        if areTheSame
+--          then tangentApproach (MEC a b) point1 point2
+--          else lineApproach (MEC a b) point1 point
+              
+-- tangentApproach (MEC a b) point1 point2
+--   = do 

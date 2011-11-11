@@ -28,6 +28,13 @@ extendedEuclid number other
     where (quotient, remainder) = euclideanDivision number other
           (gcd, a, b)           = extendedEuclid other remainder
 
+computeGCD a b = firstOf3 $ extendedEuclid a b
+  where firstOf3 (x,y,z) = x
+
+gcdOfList []  = 1 -- 1 divides everything
+gcdOfList [x] = x 
+gcdOfList (x:xs)
+  = computeGCD x (gcdOfList xs)
 
 binaryGCD 0 other = other
 binaryGCD other 0 = other

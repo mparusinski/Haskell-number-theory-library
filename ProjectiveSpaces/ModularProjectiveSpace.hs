@@ -40,15 +40,19 @@ data (Ring a) => ModularProjectiveSpace a =
 createProjectivePoint :: 
   (Ring a) => [ModularRing a] -> ReductionType a -> IO (ModularProjectiveSpace a)
 createProjectivePoint modularElements reductionFunction
-  = do let dimension = length modularElements 
+  = do coordinateArray <- createCoordinates modularElements
+       return $ MPS (ET coordinateArray) reductionFunction
+
+createCoordinates coordinatesList
+  = do let dimension = length coordinatesList
        arr <- newArray_ (1,dimension)
-       counter <- newIORef 1 
-       let f elem = do 
+       counter <- newIORef 1
+       let f elem = do
              current <- readIORef counter
-             writeArray arr current elem 
+             writeArray arr current elem
              writeIORef counter (current+1)
-       mapM_ f modularElements
-       return $ MPS (ET arr) reductionFunction
+       mapM_ f coordinatesList
+       return arr
 
 reducePoint :: 
   (Ring a) => ModularProjectiveSpace a -> IO (ModularProjectiveSpace a)
@@ -88,3 +92,4 @@ getCoordinate ::
 getCoordinate ix point
   = do let (ET coordinates) = internal point
        readArray coordinates ix
+       

@@ -11,27 +11,42 @@ Portability :  portable
 <module description starting at first column>
 -}
 
-import Factoring.TrialDivision
+module Main where
+
+import Data.Array.IO
+import Control.Monad
+
+import AbstractAlgebra.ModularRings
+import ProjectiveSpaces.ModularProjectiveSpace
 import ModularArithmetic.GCD
+import EllipticCurves.ModularEllipticCurves
 
-n = 35
+modulo = 31
 
-tuples :: [(Integer, Integer)]
-tuples
-    = do
-  let list = [1..(n-1)]
-  x <- list
-  y <- list
-  return (x,y)
+number1, number2, number3 :: ModularRing Integer
+number1 = embed 2 (flip mod modulo)
+number2 = embed 2 (flip mod modulo)
+number3 = embed 1 (flip mod modulo)
 
-filteringFunction :: (Integer, Integer) -> Bool
-filteringFunction (x,y)
-    = gcd == 1
-    where discriminant = (4 * x ^ 3 + 27 * y ^ 2) `mod` n
-          (gcd, a, b)  = extendedEuclid discriminant n
+-- this should keep an element in its simplest forme i.e. 1 ...
+reductionAlgorithm (ET coordinatesArray)
+  = do (low, up) <- getBounds coordinatesArray
+       coordinates <- mapM (readArray coordinatesArray) [low..up]
+       let values = map representant coordinates 
+       let gcd = gcdOfList values
+       let newValues = map (flip div gcd) values
+       let newCoordinates = map (flip embed (flip mod modulo)) newValues 
+       liftM ET $ createCoordinates newCoordinates
 
-candidates = 
-    filter filteringFunction tuples
+reductionFunction = RT reductionAlgorithm
+
+point = createProjectivePoint [number1, number2, number3] reductionFunction
+
+ellipticCurve = MEC a b
+  where a = embed 2 (flip mod modulo)
+        b = mod_zero (flip mod modulo)
 
 main = do 
-  print candidates
+  realPoint <- point
+  result <- evaluateAt ellipticCurve realPoint
+  print result
