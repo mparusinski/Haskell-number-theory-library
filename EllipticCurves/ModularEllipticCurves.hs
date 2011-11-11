@@ -48,6 +48,24 @@ isValidEllipticCurve (MEC x y)
         num_27    = embed 27 embedding
         discri    = (mod_mult num_4 (mod_pow x 3)) `mod_add` (mod_mult num_27 (mod_pow y 2))
 
+{-
+The cubic law is based on the following:
+slope = (yp - yq) / (xp - xq) if p != q
+        (3 xp ^ 2 + a) / 2 yp if p == q
+
+xr = -xp - xq + s ^ 2
+yr = yp + s ( xr - xp)
+
+where p + q = r. This is over normal space
+Assume p = (xp,yp,1)
+       q = (xq,yq,1)
+       r = (xr,yr,1)
+So we can remove the division by (xp - xq)
+
+But over a normal ring there is no way
+to consider the inverse of xp - xq
+-}
+
 -- cubicLaw ::
 --   (Ring a) => ModularEllipticCurve a -> ModularProjectiveSpace a -> ModularProjectiveSpace a -> IO (ModularProjectiveSpace a)
 -- cubicLaw (MEC a b) point1 point2
