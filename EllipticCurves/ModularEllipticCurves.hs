@@ -46,7 +46,7 @@ evaluateAt (MEC a b) (Point x y t) n
   = evaluateFunction a b x y t n
        
 isValidEllipticCurve (MEC x y) n
-  = discriminant == 0
+  = discriminant /= 0
   where discriminant = ((4 * x * x * x) `mod` n) + ((27 * y * y) `mod` n)
 
 {-
