@@ -12,41 +12,40 @@ Portability :  portable
 
 module EllipticCurves.ModularEllipticCurves where
 
-import Control.Monad
+import Data.Either
 
 import AbstractAlgebra.Rings
 import AbstractAlgebra.ModularRings
-import ProjectiveSpaces.ModularProjectiveSpace
+
+import ModularArithmetic.GCD
 
 -- Recall a elliptic curves over a ring/field that 
 -- do not have characteristic divisible by 2 or 3
 -- Y^2 * T = X^3 + A*X * T^2 + B * T^3
 -- Elements within it are [X:Y:Z] satisfying the 
 -- above.
--- 
-data (Ring a) => ModularEllipticCurve a = MEC (ModularRing a) (ModularRing a)
+-- This is only defined over intergers
 
-evaluateFunction a b [x,y,t]
-  = term1 `mod_sub` (term2 `mod_add` term3 `mod_add` term4)
-  where term1 = (mod_pow y 2) `mod_mult` t
-        term2 = mod_pow x 3
-        term3 = a `mod_mult` x `mod_mult` (mod_pow t 2)
-        term4 = b `mod_mult` (mod_pow t 3)
-evaluateFunction a b _
-  = error "Point has wrong dimension"
+data (Integral a) => ModularEllipticCurve a = MEC a a
+data (Integral a) => Point a = Point a a a
+data (Integral a) => SimplePoint a = SimplePoint a a
+data (Integral a) => ResultPoint a = Either (SimplePoint a) a
+
+evaluateFunction a b x y t n
+  = term1 - term2 - term3 - term4
+  where term1 = (y * y * t) `mod` n
+        term2 = (x * x * x) `mod` n
+        term3 = (a * x * t * t) `mod` n
+        term4 = (b * t * t * t) `mod` n
 
 evaluateAt :: 
-  (Ring p) => ModularEllipticCurve p -> ModularProjectiveSpace p -> IO (ModularRing p)
-evaluateAt (MEC a b) point
-  = do coordinates <- getCoordinates point
-       return $ evaluateFunction a b coordinates
+  (Intergral p) => ModularEllipticCurve p -> Point p -> p
+evaluateAt (MEC a b) (Point x y t)
+  = evaluateFunction a b x y t
        
-isValidEllipticCurve (MEC x y)
-  = discri == (mod_zero embedding)
-  where embedding = ringEmbedding x
-        num_4     = embed 4 embedding
-        num_27    = embed 27 embedding
-        discri    = (mod_mult num_4 (mod_pow x 3)) `mod_add` (mod_mult num_27 (mod_pow y 2))
+isValidEllipticCurve (MEC x y) n
+  = discriminant == 0
+  where discriminant = ((4 * x * x * x) `mod` n) + ((27 * y * y) `mod` n)
 
 {-
 The cubic law is based on the following:
@@ -66,13 +65,20 @@ But over a normal ring there is no way
 to consider the inverse of xp - xq
 -}
 
--- cubicLaw ::
---   (Ring a) => ModularEllipticCurve a -> ModularProjectiveSpace a -> ModularProjectiveSpace a -> IO (ModularProjectiveSpace a)
--- cubicLaw (MEC a b) point1 point2
---   = do areTheSame <- comparePoints point1 point2
---        if areTheSame
---          then tangentApproach (MEC a b) point1 point2
---          else lineApproach (MEC a b) point1 point
-              
--- tangentApproach (MEC a b) point1 point2
---   = do 
+-- PRE: Assuming zp = 1, zq =1
+cubicLaw (MEC a b) (SimplePoint xp yp) (SimplePoint xq yq) n
+    | factorNorm /= 0 && gcdNorm == 1 = Left normalPoint
+    | factorNorm /= 0 && gcdNorm  > 1 = Right gcdNorm
+    | factorNorm == 0 && yp + yq == 0 = Left (SimplePoint 0 0)
+    | factorTang /= 0 && gcdTang == 1 = Left tangentPoint
+    | factorTang == 0 && gcdTang  > 1 = Right gcdTang
+    where (gcdNorm, iNorm, kNorm) = extendedEuclid factorNorm n
+          (gcdTang, iTang, kTang) = extendedEuclid factorTang n
+          factorNorm              = mod (xp - yp) n
+          factorTang              = mod (2 * yp) n
+          normalSlope             = (yp - yq) * iNorm `mod` n
+          tangentSlope            = ((3 * xp * xp + a) * iTang) `mod` n
+          xr slope                = (slope * slope - xp - xq) `mod` n
+          yr slope                = (yp + slope * (xr slope - xp)) `mod` n
+          
+          
