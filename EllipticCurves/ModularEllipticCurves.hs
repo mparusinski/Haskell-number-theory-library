@@ -28,7 +28,9 @@ import ModularArithmetic.GCD
 
 data (Integral a) => ModularEllipticCurve a = MEC a a
 data (Integral a) => Point a = Point a a a
+                             deriving (Show)
 data (Integral a) => SimplePoint a = SimplePoint a a
+                                   deriving (Show)
 data (Integral a) => ResultPoint a = Either (SimplePoint a) a
 
 evaluateFunction a b x y t n
@@ -39,9 +41,9 @@ evaluateFunction a b x y t n
         term4 = (b * t * t * t) `mod` n
 
 evaluateAt :: 
-  (Intergral p) => ModularEllipticCurve p -> Point p -> p
-evaluateAt (MEC a b) (Point x y t)
-  = evaluateFunction a b x y t
+  (Integral p) => ModularEllipticCurve p -> Point p -> p -> p
+evaluateAt (MEC a b) (Point x y t) n
+  = evaluateFunction a b x y t n
        
 isValidEllipticCurve (MEC x y) n
   = discriminant == 0
@@ -67,18 +69,31 @@ to consider the inverse of xp - xq
 
 -- PRE: Assuming zp = 1, zq =1
 cubicLaw (MEC a b) (SimplePoint xp yp) (SimplePoint xq yq) n
-    | factorNorm /= 0 && gcdNorm == 1 = Left normalPoint
-    | factorNorm /= 0 && gcdNorm  > 1 = Right gcdNorm
-    | factorNorm == 0 && yp + yq == 0 = Left (SimplePoint 0 0)
-    | factorTang /= 0 && gcdTang == 1 = Left tangentPoint
-    | factorTang == 0 && gcdTang  > 1 = Right gcdTang
+  = if factorNorm /= 0 
+    then
+      if gcdNorm > 1 
+      then 
+        Right gcdNorm 
+      else 
+        Left (resultPoint normalSlope)
+    else
+      if yp `mod` n == (- yq) `mod` n
+      then 
+        Left (SimplePoint 0 0)
+      else -- yp == yq /= 0 necessarly
+        if gcdTang > 1 
+        then 
+          Right gcdTang
+        else 
+          Left (resultPoint tangentSlope)
     where (gcdNorm, iNorm, kNorm) = extendedEuclid factorNorm n
           (gcdTang, iTang, kTang) = extendedEuclid factorTang n
-          factorNorm              = mod (xp - yp) n
+          factorNorm              = mod (xp - xq) n
           factorTang              = mod (2 * yp) n
-          normalSlope             = (yp - yq) * iNorm `mod` n
+          normalSlope             = ((yp - yq) * iNorm) `mod` n
           tangentSlope            = ((3 * xp * xp + a) * iTang) `mod` n
           xr slope                = (slope * slope - xp - xq) `mod` n
-          yr slope                = (yp + slope * (xr slope - xp)) `mod` n
+          yr slope                = (yp + slope * ((xr slope) - xp)) `mod` n
+          resultPoint slope       = SimplePoint (xr slope) (yr slope)
           
           
