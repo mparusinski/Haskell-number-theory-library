@@ -69,23 +69,13 @@ to consider the inverse of xp - xq
 
 -- PRE: Assuming zp = 1, zq =1
 cubicLaw (MEC a b) (SimplePoint xp yp) (SimplePoint xq yq) n
-  = if factorNorm /= 0 
-    then
-      if gcdNorm > 1 
-      then 
-        Right gcdNorm 
-      else 
-        Left (resultPoint normalSlope)
-    else
-      if yp `mod` n == (- yq) `mod` n
-      then 
-        Left (SimplePoint 0 0)
-      else -- yp == yq /= 0 necessarly
-        if gcdTang > 1 
-        then 
-          Right gcdTang
-        else 
-          Left (resultPoint tangentSlope)
+    | factorNorm /= 0      = if gcdNorm > 1 
+                             then Right gcdNorm 
+                             else Left (resultPoint normalSlope)
+    | mod (yp + yq) n == 0 = Left $ SimplePoint 0 0 
+    | otherwise            = if gcdTang > 1 
+                             then Right gcdTang
+                             else Left (resultPoint tangentSlope)
     where (gcdNorm, iNorm, kNorm) = extendedEuclid factorNorm n
           (gcdTang, iTang, kTang) = extendedEuclid factorTang n
           factorNorm              = mod (xp - xq) n

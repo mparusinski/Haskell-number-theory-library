@@ -21,7 +21,7 @@ import Control.Monad
 
 repeatedCubicLaw :: 
     (Integral a, Integral b) => ModularEllipticCurve a -> SimplePoint a -> b -> a -> Either (SimplePoint a) a
-repeatedCubicLaw _ _ 0 _ = Left $ SimplePoint 0 0
+repeatedCubicLaw _ _ 0 _     = Left $ SimplePoint 0 0 -- point at infinity
 repeatedCubicLaw _ point 1 _ = Left point
 repeatedCubicLaw ellipticCurve point times modulus
     | rem == 0  = either evenSquare Right result
@@ -39,27 +39,31 @@ lenstraECM number bound
     | number `mod` 2 == 0 = Just 2
     | number `mod` 3 == 0 = Just 3
     | number `mod` 5 == 0 = Just 5
-    | otherwise           = lenstraECMLoop number bound primes primes ellipticCurves
+    | otherwise           = lenstraECMLoop number bound primes primes ellipticCurves initialPoint
     where primes          = eratosthenesSieve bound
           ellipticCurves  = map (\x -> MEC x 1) list
           list            = [1..upperBound]
-          upperBound      = 100
+          upperBound      = number - 1
+          initialPoint    = SimplePoint 0 1
 
-lenstraECMLoop _ _ _ _ [] = Nothing
-lenstraECMLoop number bound [] primeList (ec:ecs) 
-    = lenstraECMLoop number bound primeList primeList ecs
-lenstraECMLoop number bound (p:ps) primeList (ec:ecs)
-    = either recurse Just $ repeatedCubicLaw ec initialPoint highestPowerP number
-    where highestPowerP = findHighestPowerDividing p bound
-          initialPoint  = SimplePoint 0 1
-          recurse arg   = lenstraECMLoop number bound ps primeList (ec:ecs)
+lenstraECMLoop _ _ _ _ [] _ = Nothing
+lenstraECMLoop number bound [] primeList (ec:ecs) _
+    = lenstraECMLoop number bound primeList primeList ecs initialPoint
+    where initialPoint  = SimplePoint 0 1 
+lenstraECMLoop number bound (p:ps) primeList (ec:ecs) accumPoint
+    = either recurse Just result
+    where highestPowerP = findHighestPower p bound
+          recurse point = lenstraECMLoop number bound ps primeList (ec:ecs) point
+          result        = repeatedCubicLaw ec accumPoint highestPowerP number
 
 -- this is a helper function no error checking!!!!
-findHighestPowerDividing p n
-    | n == 1    = 1
-    | rem == 0  = p * findHighestPowerDividing p quot
-    | otherwise = 1
-    where (quot, rem) = divMod n p
+findHighestPower :: (Integral a) => a -> a -> a
+findHighestPower p n
+    = findHighestPowerAccum p bound 1
+    where bound = floor $ (fromIntegral n :: Double) / (fromIntegral p :: Double)
+          findHighestPowerAccum p bound accum 
+              | accum > bound = accum
+              | otherwise     = findHighestPowerAccum p bound (accum * p)
 
 smartBound number
     = 1 + (ceiling $ (l number) ** (1 / sqrt 2))
