@@ -39,22 +39,24 @@ lenstraECM number bound
     | number `mod` 2 == 0 = Just 2
     | number `mod` 3 == 0 = Just 3
     | number `mod` 5 == 0 = Just 5
-    | otherwise           = lenstraECMLoop number bound primes primes ellipticCurves initialPoint
-    where primes          = eratosthenesSieve bound
+    | otherwise           = lenstraECMLoop number primePowers primePowers ellipticCurves initialPoint
+    where primePowers     = map (flip findHighestPower bound) $ eratosthenesSieve bound
           ellipticCurves  = map (\x -> MEC x 1) list
           list            = [1..upperBound]
           upperBound      = number - 1
           initialPoint    = SimplePoint 0 1
 
-lenstraECMLoop _ _ _ _ [] _ = Nothing
-lenstraECMLoop number bound [] primeList (ec:ecs) _
-    = lenstraECMLoop number bound primeList primeList ecs initialPoint
+{-
+Try avoiding recomputing the highestpowers up to b
+-}
+lenstraECMLoop _ _ _ [] _ = Nothing
+lenstraECMLoop number [] primePowerList (ec:ecs) _
+    = lenstraECMLoop number primePowerList primePowerList ecs initialPoint
     where initialPoint  = SimplePoint 0 1 
-lenstraECMLoop number bound (p:ps) primeList (ec:ecs) accumPoint
+lenstraECMLoop number (p:ps) primeList (ec:ecs) accumPoint
     = either recurse Just result
-    where highestPowerP = findHighestPower p bound
-          recurse point = lenstraECMLoop number bound ps primeList (ec:ecs) point
-          result        = repeatedCubicLaw ec accumPoint highestPowerP number
+    where recurse point = lenstraECMLoop number ps primeList (ec:ecs) point
+          result        = repeatedCubicLaw ec accumPoint p number
 
 -- this is a helper function no error checking!!!!
 findHighestPower :: (Integral a) => a -> a -> a
@@ -66,6 +68,6 @@ findHighestPower p n
               | otherwise     = findHighestPowerAccum p bound (accum * p)
 
 smartBound number
-    = 1 + (ceiling $ (l number) ** (1 / sqrt 2))
+    = ceiling $ (l number) ** (1 / sqrt 2)
     where l x = exp (sqrt $ log x_ * log (log x_))
               where x_ = fromIntegral x :: Double
