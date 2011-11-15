@@ -19,12 +19,13 @@ import System.IO
 import Data.Maybe
 
 import Factoring.Lenstra
+import Primes.Sieve
 
 listOfNumbers = [2..1000]
 
 performTrialFactoring num
     = do before <- getCPUTime
-         factor <- return $! lenstraECMSmartBound num
+         factor <- lenstraECMSmartBound num
          after  <- getCPUTime
          let resolution = fromIntegral cpuTimePrecision :: Double
          let diffTime = fromIntegral (after - before) / resolution
@@ -39,5 +40,9 @@ printEntry (num, factor, diffTime)
 --           mapM_ (hPutStrLn handle) stringResults
 --           hClose handle
 
-main = do print $ lenstraECMSmartBound (7000000001 * 7000000001)
+main = lenstraECMSmartBound (7000000001 * 7000000001) >>= print
 
+-- main = do print $ last $ eratosthenesSieve 8000000
+
+-- main = do list <- eratosthenesSieve_io 1000000
+--           print $ last $ list

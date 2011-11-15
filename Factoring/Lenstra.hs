@@ -25,25 +25,27 @@ repeatedCubicLaw ::
 repeatedCubicLaw _ point 1 _ = Left point
 repeatedCubicLaw ellipticCurve point times modulus
     | result == Left pointAtInf = Left pointAtInf -- skip recursion
-    | rem == 0                  = either evenSquare Right result
-    | otherwise                 = either oddSquare Right result
+    | rem == 0                  = square
+    | otherwise                 = squarePlus1
     where (half, rem)  = divMod times 2 
           result       = repeatedCubicLaw ellipticCurve point half modulus
-          evenSquare p = cubicLaw ellipticCurve p p modulus
-          oddSquare r  = either (\x -> cubicLaw ellipticCurve x point modulus) Right (evenSquare r)
+          square       = either (\x -> cubicLaw ellipticCurve x x modulus) Right result
+          squarePlus1  = either (\x -> cubicLaw ellipticCurve x point modulus) Right square
           pointAtInf   = SimplePoint 0 0
 
 lenstraECMSmartBound number
     = lenstraECM number (smartBound number)
 
-lenstraECM :: (Integral a) => a -> a -> Maybe a
+lenstraECM :: Integer -> Integer -> IO (Maybe Integer)
 lenstraECM number bound 
-    | number `mod` 2 == 0 = Just 2
-    | number `mod` 3 == 0 = Just 3
-    | number `mod` 5 == 0 = Just 5
-    | otherwise           = lenstraECMLoop number primePowers primePowers ellipticCurves initialPoint
-    where primePowers     = map (flip findHighestPower bound) $ eratosthenesSieve bound
-          ellipticCurves  = map (\x -> MEC x 1) list
+    | number `mod` 2 == 0 = return $ Just 2
+    | number `mod` 3 == 0 = return $ Just 3
+    | number `mod` 5 == 0 = return $ Just 5
+    | otherwise           = 
+        do primes <- eratosthenesSieve_io bound
+           primePowers <- return $! map (findHighestPower bound) primes
+           return $ lenstraECMLoop number primePowers primePowers ellipticCurves initialPoint
+    where ellipticCurves  = map (\x -> MEC x 1) list
           list            = [1..upperBound]
           upperBound      = number - 1
           initialPoint    = SimplePoint 0 1
@@ -62,12 +64,12 @@ lenstraECMLoop number (p:ps) primeList (ec:ecs) accumPoint
 
 -- this is a helper function no error checking!!!!
 findHighestPower :: (Integral a) => a -> a -> a
-findHighestPower p n
-    = findHighestPowerAccum p bound 1
+findHighestPower n p
+    = findHighestPowerAccum bound p 1
     where bound = floor $ (fromIntegral n :: Double) / (fromIntegral p :: Double)
-          findHighestPowerAccum p bound accum 
+          findHighestPowerAccum bound p accum 
               | accum > bound = accum
-              | otherwise     = findHighestPowerAccum p bound (accum * p)
+              | otherwise     = findHighestPowerAccum bound p (accum * p)
 
 smartBound number
     = ceiling $ (l number) ** (1 / sqrt 2)
