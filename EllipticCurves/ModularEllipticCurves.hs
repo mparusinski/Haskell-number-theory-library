@@ -30,7 +30,7 @@ data (Integral a) => ModularEllipticCurve a = MEC a a
 data (Integral a) => Point a = Point a a a
                              deriving (Show)
 data (Integral a) => SimplePoint a = SimplePoint a a
-                                   deriving (Show)
+                                   deriving (Show, Eq)
 data (Integral a) => ResultPoint a = Either (SimplePoint a) a
 
 evaluateFunction a b x y t n
@@ -68,11 +68,13 @@ to consider the inverse of xp - xq
 -}
 
 -- PRE: Assuming zp = 1, zq =1
+--cubicLaw _ (SimplePoint 0 0) a = a
+--cubicLaw _ a (SimplePoint 0 0) = a
 cubicLaw (MEC a b) (SimplePoint xp yp) (SimplePoint xq yq) n
     | factorNorm /= 0      = if gcdNorm > 1 
                              then Right gcdNorm 
                              else Left (resultPoint normalSlope)
-    | mod (yp + yq) n == 0 = Left $ SimplePoint 0 0 
+    | mod (yp + yq) n == 0 = Left $ SimplePoint 0 0 -- convention for point at infinity 
     | otherwise            = if gcdTang > 1 
                              then Right gcdTang
                              else Left (resultPoint tangentSlope)

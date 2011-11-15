@@ -21,15 +21,17 @@ import Control.Monad
 
 repeatedCubicLaw :: 
     (Integral a, Integral b) => ModularEllipticCurve a -> SimplePoint a -> b -> a -> Either (SimplePoint a) a
-repeatedCubicLaw _ _ 0 _     = Left $ SimplePoint 0 0 -- point at infinity
+-- repeatedCubicLaw _ _ 0 _     = Left $ SimplePoint 0 0 -- point at infinity
 repeatedCubicLaw _ point 1 _ = Left point
 repeatedCubicLaw ellipticCurve point times modulus
-    | rem == 0  = either evenSquare Right result
-    | otherwise = either oddSquare Right result
+    | result == Left pointAtInf = Left pointAtInf -- skip recursion
+    | rem == 0                  = either evenSquare Right result
+    | otherwise                 = either oddSquare Right result
     where (half, rem)  = divMod times 2 
           result       = repeatedCubicLaw ellipticCurve point half modulus
           evenSquare p = cubicLaw ellipticCurve p p modulus
           oddSquare r  = either (\x -> cubicLaw ellipticCurve x point modulus) Right (evenSquare r)
+          pointAtInf   = SimplePoint 0 0
 
 lenstraECMSmartBound number
     = lenstraECM number (smartBound number)
