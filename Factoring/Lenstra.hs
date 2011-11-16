@@ -1,13 +1,12 @@
 {- |
 Module      :  $Header$
-Description :  Module for factorising numbers using Lenstra's algorithm
+Description :  Module for factorising numbers using Lenstra's ECM algorithm
 Copyright   :  (c) Michal Parusinski
 License     :  GPLv3
 
 Maintainer  :  mparusinski@gmail.com
 Stability   :  experimental
 Portability :  portable
-
 -}
 
 module Factoring.Lenstra where
@@ -31,7 +30,7 @@ repeatedCubicLaw ellipticCurve point times modulus
           result       = repeatedCubicLaw ellipticCurve point half modulus
           square       = either (\x -> cubicLaw ellipticCurve x x modulus) Right result
           squarePlus1  = either (\x -> cubicLaw ellipticCurve x point modulus) Right square
-          pointAtInf   = SimplePoint 0 0
+          pointAtInf   = SimplePoint 0 0 -- convention
 
 lenstraECMSmartBound number
     = lenstraECM number (smartBound number)
@@ -42,7 +41,7 @@ lenstraECM number bound
     | number `mod` 3 == 0 = return $ Just 3
     | number `mod` 5 == 0 = return $ Just 5
     | otherwise           = 
-        do primes <- eratosthenesSieve_io bound
+        do primes <- return $! eratosthenesSieve bound
            primePowers <- return $! map (findHighestPower bound) primes
            return $ lenstraECMLoop number primePowers primePowers ellipticCurves initialPoint
     where ellipticCurves  = map (\x -> MEC x 1) list
@@ -50,9 +49,6 @@ lenstraECM number bound
           upperBound      = number - 1
           initialPoint    = SimplePoint 0 1
 
-{-
-Try avoiding recomputing the highestpowers up to b
--}
 lenstraECMLoop _ _ _ [] _ = Nothing
 lenstraECMLoop number [] primePowerList (ec:ecs) _
     = lenstraECMLoop number primePowerList primePowerList ecs initialPoint
@@ -62,15 +58,13 @@ lenstraECMLoop number (p:ps) primeList (ec:ecs) accumPoint
     where recurse point = lenstraECMLoop number ps primeList (ec:ecs) point
           result        = repeatedCubicLaw ec accumPoint p number
 
--- this is a helper function no error checking!!!!
-findHighestPower :: (Integral a) => a -> a -> a
 findHighestPower n p
     = findHighestPowerAccum bound p 1
     where bound = floor $ (fromIntegral n :: Double) / (fromIntegral p :: Double)
           findHighestPowerAccum bound p accum 
               | accum > bound = accum
               | otherwise     = findHighestPowerAccum bound p (accum * p)
-
+ 
 smartBound number
     = ceiling $ (l number) ** (1 / sqrt 2)
     where l x = exp (sqrt $ log x_ * log (log x_))

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Module for elliptic curves over R/I
+Description :  Module for elliptic curves over Z/NZ (hence modulus)
 Copyright   :  (c) Michal Parusinski
 License     :  GPLv3
 
@@ -61,20 +61,17 @@ where p + q = r. This is over normal space
 Assume p = (xp,yp,1)
        q = (xq,yq,1)
        r = (xr,yr,1)
-So we can remove the division by (xp - xq)
-
-But over a normal ring there is no way
-to consider the inverse of xp - xq
 -}
 
 -- PRE: Assuming zp = 1, zq =1
---cubicLaw _ (SimplePoint 0 0) a = a
---cubicLaw _ a (SimplePoint 0 0) = a
+-- SimplePoint 0 0 is convention with point at infinity
+-- Norm is for Normal
+-- Tang is for Tangent
 cubicLaw (MEC a b) (SimplePoint xp yp) (SimplePoint xq yq) n
     | factorNorm /= 0      = if gcdNorm > 1 
                              then Right gcdNorm 
                              else Left (resultPoint normalSlope)
-    | mod (yp + yq) n == 0 = Left $ SimplePoint 0 0 -- convention for point at infinity 
+    | mod (yp + yq) n == 0 = Left $ SimplePoint 0 0 
     | otherwise            = if gcdTang > 1 
                              then Right gcdTang
                              else Left (resultPoint tangentSlope)

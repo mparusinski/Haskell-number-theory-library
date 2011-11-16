@@ -1,14 +1,12 @@
 {- |
 Module      :  $Header$
-Description :  Module to generate primes
+Description :  Module to generate primes using Miller Rabin
 Copyright   :  (c) Michal Parusinski
 License     :  GPLv3
 
 Maintainer  :  mparusinski@gmail.com
 Stability   :  experimental
 Portability :  portable
-
-<module description starting at first column>
 -}
 
 module Primes.MillerRabin where

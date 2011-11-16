@@ -15,34 +15,36 @@ module Main where
 
 import Control.Monad
 import System.CPUTime
-import System.IO
-import Data.Maybe
+import System.Random
 
 import Factoring.Lenstra
-import Primes.Sieve
-
-listOfNumbers = [2..1000]
+import Primes.MillerRabin
+import Generator.RandomGenerator
+import Generator.Generator
 
 performTrialFactoring num
     = do before <- getCPUTime
          factor <- lenstraECMSmartBound num
          after  <- getCPUTime
          let resolution = fromIntegral cpuTimePrecision :: Double
-         let diffTime = fromIntegral (after - before) / resolution
-         return (num, factor, diffTime)
+         diffTime <- return $! fromIntegral (after - before) / resolution
+         return (factor, diffTime)
 
-printEntry (num, factor, diffTime)
-    = show num ++ "\t" ++ maybe "0" show factor ++ "\t" ++ show diffTime
+generateProductTwoPrimes bitSize
+    = do updateIORandomGenerator
+         stdGen1 <- getStdGen
+         let pg = primeGenerator stdGen1 bitSize
+         updateIORandomGenerator
+         stdGen2 <- getStdGen
+         let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
+         return (prime1 * prime2, prime1, prime2)
 
--- main = do results <- mapM performTrialFactoring listOfNumbers
---           handle <- openFile "results.txt" WriteMode
---           let stringResults = map printEntry results
---           mapM_ (hPutStrLn handle) stringResults
---           hClose handle
+chosenBitSize = 36 -- bits
 
-main = lenstraECMSmartBound (7000000001 * 7000000001) >>= print
+main = do (product, prime1, prime2) <- generateProductTwoPrimes chosenBitSize
+          putStrLn $ show product ++ " = " ++ show prime1 ++ " x " ++ show prime2
+          (factor, diffTime) <- performTrialFactoring product
+          putStrLn $ show factor ++ " divides " ++ show product
+          putStrLn $ "Factor found in " ++ show diffTime ++ " sec"
 
--- main = do print $ last $ eratosthenesSieve 8000000
 
--- main = do list <- eratosthenesSieve_io 1000000
---           print $ last $ list
