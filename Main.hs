@@ -39,7 +39,7 @@ generateProductTwoPrimes bitSize
          let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
          return (prime1 * prime2, prime1, prime2)
 
-chosenBitSize = 36 -- bits
+chosenBitSize = 20 -- bits
 
 main = do (product, prime1, prime2) <- generateProductTwoPrimes chosenBitSize
           putStrLn $ show product ++ " = " ++ show prime1 ++ " x " ++ show prime2
