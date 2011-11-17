@@ -27,11 +27,9 @@ import ModularArithmetic.GCD
 -- This is only defined over intergers
 
 data (Integral a) => ModularEllipticCurve a = MEC a a
-data (Integral a) => Point a = Point a a a
-                             deriving (Show)
-data (Integral a) => SimplePoint a = SimplePoint a a
+data (Integral a) => Point a = Inf | Point a a
                                    deriving (Show, Eq)
-data (Integral a) => ResultPoint a = Either (SimplePoint a) a
+data (Integral a) => ResultPoint a = Either (Point a) a
 
 evaluateFunction a b x y t n
   = term1 - term2 - term3 - term4
@@ -39,11 +37,6 @@ evaluateFunction a b x y t n
         term2 = (x * x * x) `mod` n
         term3 = (a * x * t * t) `mod` n
         term4 = (b * t * t * t) `mod` n
-
-evaluateAt :: 
-  (Integral p) => ModularEllipticCurve p -> Point p -> p -> p
-evaluateAt (MEC a b) (Point x y t) n
-  = evaluateFunction a b x y t n
        
 isValidEllipticCurve (MEC x y) n
   = discriminant /= 0
@@ -64,25 +57,21 @@ Assume p = (xp,yp,1)
 -}
 
 -- PRE: Assuming zp = 1, zq =1
--- SimplePoint 0 0 is convention with point at infinity
+--      We assume xp,yp is reduced modulo n same for xq,yq
 -- Norm is for Normal
 -- Tang is for Tangent
-cubicLaw (MEC a b) (SimplePoint xp yp) (SimplePoint xq yq) n
-    | factorNorm /= 0      = if gcdNorm > 1 
-                             then Right gcdNorm 
-                             else Left (resultPoint normalSlope)
-    | mod (yp + yq) n == 0 = Left $ SimplePoint 0 0 
-    | otherwise            = if gcdTang > 1 
-                             then Right gcdTang
-                             else Left (resultPoint tangentSlope)
-    where (gcdNorm, iNorm, kNorm) = extendedEuclid factorNorm n
-          (gcdTang, iTang, kTang) = extendedEuclid factorTang n
-          factorNorm              = mod (xp - xq) n
-          factorTang              = mod (2 * yp) n
-          normalSlope             = ((yp - yq) * iNorm) `mod` n
-          tangentSlope            = ((3 * xp * xp + a) * iTang) `mod` n
-          xr slope                = (slope * slope - xp - xq) `mod` n
-          yr slope                = (yp + slope * ((xr slope) - xp)) `mod` n
-          resultPoint slope       = SimplePoint (xr slope) (yr slope)
-          
+cubicLaw _ Inf p _ = Left p
+cubicLaw _ p Inf _ = Left p
+cubicLaw (MEC a b) (Point xp yp) (Point xq yq) n
+    | xp /= xq  = let (gcd, inv, rest) = extendedEuclid (xp - xq) n
+                      slope            = ((yp - yq) * (inv `mod` n)) `mod` n
+                      xr               = (slope * slope - xp - xq) `mod` n
+                      yr               = xr `seq` (yp + slope * (xr - xp)) `mod` n
+                 in if gcd > 1 then Right gcd else yr `seq` Left $ Point xr yr
+    | yp == -yq = Left Inf
+    | otherwise = let (gcd, inv, rest) = extendedEuclid (2 * yp) n
+                      slope            = mod (((3 * xp * xp + a) `mod` n) * (inv `mod` n)) n
+                      xr               = (slope * slope - 2 * xp) `mod` n
+                      yr               = xr `seq` (yp + slope * (xr -xp)) `mod` n
+                  in if gcd > 1 then Right gcd else yr `seq` Left $ Point xr yr
           

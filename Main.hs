@@ -24,22 +24,22 @@ import Generator.Generator
 
 performTrialFactoring num
     = do before <- getCPUTime
-         factor <- lenstraECMSmartBound num
+         factor <- return $! lenstraECMSmartBound num
          after  <- getCPUTime
          let resolution = fromIntegral cpuTimePrecision :: Double
          diffTime <- return $! fromIntegral (after - before) / resolution
          return (factor, diffTime)
 
 generateProductTwoPrimes bitSize
-    = do updateIORandomGenerator
-         stdGen1 <- getStdGen
+    = do -- updateIORandomGenerator
+         stdGen1 <- return $! mkStdGen 2 -- getStdGen
          let pg = primeGenerator stdGen1 bitSize
-         updateIORandomGenerator
-         stdGen2 <- getStdGen
+         -- updateIORandomGenerator
+         stdGen2 <- return $! mkStdGen 3 -- getStdGen
          let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
          return (prime1 * prime2, prime1, prime2)
 
-chosenBitSize = 20 -- bits
+chosenBitSize = 48 -- bits
 
 main = do (product, prime1, prime2) <- generateProductTwoPrimes chosenBitSize
           putStrLn $ show product ++ " = " ++ show prime1 ++ " x " ++ show prime2

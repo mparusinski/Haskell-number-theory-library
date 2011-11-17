@@ -12,9 +12,15 @@ popd
 pushd ./Generator/
 rm -v *.o *.hi *~
 popd
-pushd ./HaskellToolkit/
+pushd ./EllipticCurves/
 rm -v *.o *.hi *~
 popd
 pushd ./Primes/
+rm -v *.o *.hi *~
+popd
+pushd ./AbstractAlgebra/
+rm -v *.o *.hi *~
+popd
+pushd ./HaskellToolkit/
 rm -v *.o *.hi *~
 popd
