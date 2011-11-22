@@ -40,6 +40,26 @@ extendedEuclid a b -- using iterative approach
                     (q,r)       = divMod prevRem currRem
                     recurse     = extendedEuclidAccum (currRem, currU, currV) nextTriplet
 
+-- PRE:  All of [a] are not divisible by N
+-- POST: Outputs the list of inverses of a factor of N
+parallelInverse :: (Integral a) => [a] -> a -> Either [a] a
+parallelInverse as n
+    = if d > 1 
+      then Right d 
+      else Left . snd $ loop productsComputed as 1
+    where (d,u,v)          = extendedEuclid (last $ productsComputed) n
+          productsComputed = productsMod as n
+          loop [c] [a] prevC = (u * a `mod` n, [u * prevC `mod` n])
+          loop (c:cs) (a:as) prevC
+              = (currentU * a `mod` n, (currentU * prevC `mod` n) : inverses)
+              where (currentU, inverses) = loop cs as c
+
+productsMod (a:as) n
+    = productsModAccum as a n
+    where productsModAccum [] acc _ = [acc]
+          productsModAccum (a:as) acc n
+              = acc : productsModAccum as (acc * a `mod` n) n
+
 
 computeGCD a b = firstOf3 $ extendedEuclid a b
   where firstOf3 (x,y,z) = x

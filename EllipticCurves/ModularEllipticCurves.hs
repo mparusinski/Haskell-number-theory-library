@@ -56,7 +56,7 @@ Assume p = (xp,yp,1)
        r = (xr,yr,1)
 -}
 
--- PRE: Assuming zp = 1, zq =1
+-- PRE: Assuming zp = 1, zq = 1
 --      We assume xp,yp is reduced modulo n same for xq,yq
 -- Norm is for Normal
 -- Tang is for Tangent
@@ -75,3 +75,50 @@ cubicLaw (MEC a b) (Point xp yp) (Point xq yq) n
                       yr               = xr `seq` (yp + slope * (xr -xp)) `mod` n
                   in if gcd > 1 then Right gcd else yr `seq` Left $ Point xr yr
           
+
+parallelCubicLaw ellipticCurves pointsA pointsB n
+     = case inverses of
+         Left invs -> Left $ parallelCubicLawLoop ellipticCurves pointsA pointsB invs n
+         Right div -> Right div
+     where inversesToCompute = map getNumberToInvert (zip pointsA pointsB)
+           inverses          = maybeParallelInverse inversesToCompute n
+
+
+parallelCubicLawLoop [] _ _ _ _ = []
+parallelCubicLawLoop (ec:ecs) (Inf : pas) (point : pbs) (inv : invs) n
+    = point : rest
+    where rest = parallelCubicLawLoop ecs pas pbs invs n
+parallelCubicLawLoop (ec:ecs) (point : pas) (Inf : pbs) (inv : invs) n
+    = point : rest
+    where rest = parallelCubicLawLoop ecs pas pbs invs n
+parallelCubicLawLoop (ec:ecs) (Point xp yp : pas) (Point xq yq : pbs) (Nothing : invs) n
+    = Inf : rest -- Nothing => yp = -yq
+    where rest = parallelCubicLawLoop ecs pas pbs invs n
+parallelCubicLawLoop (MEC a b : ecs) (Point xp yp : pas) (Point xq yq : pbs) (Just inv:invs) n
+    | xp /= xq  = let slope = ((yp - yq) * inv `mod` n) `mod` n
+                      xr    = (slope * slope - xp - xq) `mod` n
+                      yr    = xr `seq` (yp + slope * (xr - xp)) `mod` n
+                  in (Point xr yr) : rest
+    | otherwise = let slope = mod (((3 * xp * xp + a) `mod` n) * (inv `mod` n)) n
+                      xr    = (slope * slope - 2 * xp) `mod` n
+                      yr    = xr `seq` (yp + slope * (xr - xp)) `mod` n
+                  in (Point xr yr) : rest
+    where rest = parallelCubicLawLoop ecs pas pbs invs n
+
+
+maybeParallelInverse as n
+    = either (Left . leftFunction) (Right . rightFunction) result 
+    where leftFunction  = zipWith zipper as
+          rightFunction = id
+          result        = parallelInverse (smartList as) n
+          smartList     = map (maybe 1 id)
+          zipper x invx = maybe Nothing (Just . (const invx)) x
+
+
+getNumberToInvert (Inf,_) = Nothing
+getNumberToInvert (_,Inf) = Nothing
+getNumberToInvert ((Point xp yp),(Point xq yq))
+    | xp /= xq  = Just (xp - xq)
+    | yp == -yq = Nothing
+    | otherwise = Just (2 * yp)
+                  

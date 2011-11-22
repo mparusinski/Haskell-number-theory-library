@@ -32,8 +32,26 @@ repeatedCubicLaw ellipticCurve point times modulus
           square       = either (\x -> cubicLaw ellipticCurve x x modulus) Right result
           squarePlus1  = either (\x -> cubicLaw ellipticCurve x point modulus) Right square
 
+repeatedParallelCubic ::
+    (Integral a, Integral b) => [ModularEllipticCurve a] -> [Point a] -> b -> a -> Either [Point a] a
+repeatedParallelCubic _ points 1 _ = Left points
+repeatedParallelCubic ecs points times modulus
+    | rem == 0  = square
+    | otherwise = squarePlus1
+    where (half, rem) = divMod times 2
+          result      = repeatedParallelCubic ecs points half modulus
+          square      = case result of
+                          Left ps -> parallelCubicLaw ecs ps ps modulus
+                          Right div -> Right div
+          squarePlus1 = case square of
+                          Left ps -> parallelCubicLaw ecs points ps modulus
+                          Right div -> Right div
+
 lenstraECMSmartBound number
     = lenstraECM number (smartBound number)
+
+lenstraECMParallelSmartBound number
+    = lenstraECMParallel number (smartBound number)
 
 lenstraECM :: Integer -> Integer -> Maybe Integer
 lenstraECM number bound 
@@ -45,18 +63,46 @@ lenstraECM number bound
             primePowers = map (findHighestPower bound) primes
             upperBound  = (number - 1)
             curves      = map (\x -> MEC x 1) [1..upperBound]
-            initPoint   = Point 0 1
         in lenstraECMLoop number primePowers curves
     where lenstraECMLoop _ _ [] = Nothing
-          lenstraECMLoop number primePowerList (ec:ecs)
+          lenstraECMLoop number primePowers (ec:ecs)
               = if isNothing result then recurse else result
-              where result  = lenstraECMTryEC number primePowerList (Point 0 1) ec
-                    recurse = lenstraECMLoop number primePowerList ecs
+              where result  = lenstraECMTryEC number primePowers initP ec
+                    recurse = lenstraECMLoop number primePowers ecs
+                    initP   = Point 0 1
           lenstraECMTryEC _ [] _ _ = Nothing
           lenstraECMTryEC number (p:ps) accumPoint ec
               = either recurse Just result
               where recurse point = lenstraECMTryEC number ps point ec
                     result        = repeatedCubicLaw ec accumPoint p number
+
+
+-- Good chunksize was obtained from experimentation
+lenstraECMParallel :: Integer -> Integer -> Maybe Integer
+lenstraECMParallel number bound
+    | number `mod` 2 == 0 = Just 2
+    | number `mod` 3 == 0 = Just 3
+    | number `mod` 5 == 0 = Just 5
+    | otherwise           =
+        let primes      = eratosthenesSieve bound
+            primePowers = map (findHighestPower bound) primes
+            upperBound  = (number - 1)
+            curves      = map (\x -> MEC x 1) [1..upperBound]
+        in lenstraECMLoop number primePowers curves
+    where lenstraECMLoop _ _ [] = Nothing
+          lenstraECMLoop number primePowers ecs
+              = if isNothing result then recurse else result
+              where result    = lenstraECMTryChunk number primePowers points ecChunk
+                    recurse   = lenstraECMLoop number primePowers ecRest
+                    ecChunk   = take chunkSize ecs
+                    ecRest    = drop chunkSize ecs
+                    points    = take chunkSize $ repeat (Point 0 1)
+                    chunkSize = if number < 100 then fromIntegral number else 100
+          lenstraECMTryChunk _ [] _ _ = Nothing
+          lenstraECMTryChunk number (p:ps) accumPoints ecChunk
+              = either recurse Just result
+              where recurse points = lenstraECMTryChunk number ps points ecChunk
+                    result         = repeatedParallelCubic ecChunk accumPoints p number
 
 findHighestPower n p
     = findHighestPowerAccum bound p 1
