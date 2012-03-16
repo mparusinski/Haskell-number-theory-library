@@ -14,50 +14,62 @@ Portability :  portable
 module Main where
 
 import Control.Monad
-import System.Time
+import Data.Maybe
 import System.Random
+--import Criterion.Main
+import System( getArgs )
 
 import Factoring.Lenstra
 import Primes.MillerRabin
 import Generator.RandomGenerator
 import Generator.Generator
 
-getTimeMS 
-    = do (TOD s p) <- getClockTime
-         return $ fromIntegral (s * 1000 + p `div` 10^6)
+computeEagerly function argument
+    = do output <- return $! function argument
+         return output
 
-performTrialFactoring num
-    = do before <- getTimeMS
-         factor <- return $! lenstraECMSmartBound num
-         after  <- getTimeMS
-         let diff = after - before
-         return (factor, diff)
+ecmStandardFull :: StdGen -> Integer -> [Integer]
+ecmStandardFull randomGen number
+  = error "To be implemented"
 
-performTrialFactoringParallel num
-    = do before <- getTimeMS
-         factor <- return $! lenstraECMParallelSmartBound num
-         after  <- getTimeMS
-         let diff = after - before
-         return (factor, diff)
+factorUsingECMStandard :: Integer -> IO (Maybe Integer)
+factorUsingECMStandard = computeEagerly lenstraECMSmartBound
 
-generateProductTwoPrimes bitSize
-    = do updateIORandomGenerator
-         stdGen1 <- getStdGen
-         let pg = primeGenerator stdGen1 bitSize
-         updateIORandomGenerator
-         stdGen2 <- getStdGen
-         let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
-         return (prime1 * prime2, prime1, prime2)
+factorUsingECMParallel :: Integer -> IO (Maybe Integer)
+factorUsingECMParallel = computeEagerly lenstraECMParallelSmartBound
 
-chosenBitSize = 30 -- bits
+-- generateProductTwoPrimes bitSize
+--     = do updateIORandomGenerator
+--          stdGen1 <- getStdGen
+--          let pg = primeGenerator stdGen1 bitSize
+--          updateIORandomGenerator
+--          stdGen2 <- getStdGen
+--          let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
+--          return (prime1 * prime2, prime1, prime2)
 
-main = do (product, prime1, prime2) <- generateProductTwoPrimes chosenBitSize
-          putStrLn $ show product++" = "++show prime1++" x "++show prime2
-          (factor, diffTime) <- performTrialFactoring product
-          putStrLn $ show factor++" divides "++show product
-          putStrLn $ "Factor found in "++show diffTime++" sec (not parallel)"
-          (factor2, diffTime2) <- performTrialFactoringParallel product
-          putStrLn $ show factor++" divides "++show product
-          putStrLn $ "Factor found in "++show diffTime++" sec (parallel)"
+-- benchmarkNonParallel product
+--     = bench "Non parallel" (nfIO $ performAction trialFactoring product)
+
+-- benchmarkParallel product
+--     = bench "Parallel" (nfIO $ performAction trialFactoringParallel product)
+    
+-- performAction action product
+--     = do factor <- action product
+--          return ()
+
+-- initialPerformAction action product
+--     = do factor <- action product
+--          putStrLn $ "found factor "++show (fromJust factor)
+
+main = do putStrLn "Hello, World!"
+
+-- main = do putStrLn "Give me bit size"
+--           bitSize <- liftM read getLine
+--           (product, prime1, prime2) <- generateProductTwoPrimes bitSize
+--           putStrLn $ show product++" = "++show prime1++" x "++show prime2
+--           initialPerformAction trialFactoringParallel product
+--           initialPerformAction trialFactoring product
+--           defaultMain [benchmarkNonParallel product, 
+--                        benchmarkParallel product]
 
 
