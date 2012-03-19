@@ -62,7 +62,7 @@ lenstraECM number bound
         let primes      = eratosthenesSieve bound
             primePowers = map (findHighestPower bound) primes
             upperBound  = (number - 1)
-            curves      = map (\x -> MEC x 1) [1..upperBound]
+            curves      = filter (isElliptic number) $ map (\x -> MEC x 1) [1..upperBound]
         in lenstraECMLoop number primePowers curves
     where lenstraECMLoop _ _ [] = Nothing
           lenstraECMLoop number primePowers (ec:ecs)
@@ -76,6 +76,8 @@ lenstraECM number bound
               where recurse point = lenstraECMTryEC number ps point ec
                     result        = repeatedCubicLaw ec accumPoint p number
 
+isElliptic num (MEC a b)
+    = (4 * a^3 + 27 * b^2) `mod` num /= 0
 
 -- Good chunksize was obtained from experimentation
 lenstraECMParallel :: Integer -> Integer -> Maybe Integer
@@ -87,7 +89,7 @@ lenstraECMParallel number bound
         let primes      = eratosthenesSieve bound
             primePowers = map (findHighestPower bound) primes
             upperBound  = (number - 1)
-            curves      = map (\x -> MEC x 1) [1..upperBound]
+            curves      = filter (isElliptic number) $ map (\x -> MEC x 1) [1..upperBound]
         in lenstraECMLoop number primePowers curves
     where lenstraECMLoop _ _ [] = Nothing
           lenstraECMLoop number primePowers ecs
@@ -114,4 +116,4 @@ findHighestPower n p
 smartBound number
     = ceiling $ (l number) ** (1 / sqrt 2)
     where l x = exp (sqrt $ log x_ * log (log x_))
-              where x_ = fromIntegral x :: Double
+              where x_ = sqrt $ fromIntegral x
