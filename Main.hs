@@ -17,90 +17,63 @@ import Control.Monad
 import Data.Maybe
 import System.Random
 import IO
-import System( getArgs )
+import Data.Time
 
 import Factoring.Lenstra
+import Factoring.TrialDivision
 import Primes.MillerRabin
 import Generator.RandomGenerator
 import Generator.Generator
 
-performTrialFactoring num
-    = do before <- getCPUTime
-         factor <- return $! lenstraECMSmartBound num
-         after  <- getCPUTime
-         let diff = fromIntegral (after - before) / 10^6
-         return (factor, diff)
+ecmGenericFull method number
+  = do updateIORandomGenerator
+       stdGen <- getStdGen
+       let isPrime = millerRabinPrimalityTest stdGen number
+       if isPrime 
+         then return [number]
+         else do maybeFactor <- return $! method number
+                 if isNothing maybeFactor 
+                   then return [number]
+                   else do leftPart <- ecmStandardFull $ fromJust maybeFactor
+                           rightPart <- ecmStandardFull $ number `div` (fromJust maybeFactor)
+                           return (leftPart ++ rightPart)
 
-performTrialFactoringParallel num
-    = do before <- getCPUTime
-         factor <- return $! lenstraECMParallelSmartBound num
-         after  <- getCPUTime
-         let diff = fromIntegral (after - before) / 10^6
-         return (factor, diff)
+ecmStandardFull = ecmGenericFull lenstraECMSmartBound
+ecmParallelFull = ecmGenericFull lenstraECMParallelSmartBound
 
-generateProductTwoPrimes bitSize
-    = do updateIORandomGenerator
-         stdGen1 <- getStdGen
-         let pg = primeGenerator stdGen1 bitSize
-         updateIORandomGenerator
-         stdGen2 <- getStdGen
-         let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
-         return (prime1 * prime2, prime1, prime2)
+trialDivisionFull num = return $! trialDivision num
 
-chosenBitSize = 30 -- bits
+generateSemiPrime bitSize
+     = do updateIORandomGenerator
+          stdGen1 <- getStdGen
+          let pg = primeGenerator stdGen1 bitSize
+          updateIORandomGenerator
+          stdGen2 <- getStdGen
+          let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
+          return (prime1 * prime2, prime1, prime2)
 
-main = do (product, prime1, prime2) <- generateProductTwoPrimes chosenBitSize
-          putStrLn $ show product++" = "++show prime1++" x "++show prime2
-          (factor, diffTime) <- performTrialFactoring product
-          putStrLn $ show factor++" divides "++show product
-          putStrLn $ "Factor found in "++show diffTime++" sec (not parallel)"
-          (factor2, diffTime2) <- performTrialFactoringParallel product
-          putStrLn $ show factor++" divides "++show product
-          putStrLn $ "Factor found in "++show diffTime++" sec (parallel)"
+-- action should always give the same output
+runActionNTimes action input times
+  = liftM head $ mapM action $ take times $ repeat input
 
-ecmStandardFull :: StdGen -> Integer -> [Integer]
-ecmStandardFull randomGen number
-  = error "To be implemented"
+times = 5
 
-factorUsingECMStandard :: Integer -> IO (Maybe Integer)
-factorUsingECMStandard = computeEagerly lenstraECMSmartBound
+mainDivision method number methodString
+  = do putStr $ "Using " ++ methodString ++ " ..."
+       hFlush stdout
+       start <- getCurrentTime
+       factors <- runActionNTimes method number times -- it should be eager
+       end <- getCurrentTime
+       putStrLn $ " found factors " ++ show factors
+       let timeTaken = show ((diffUTCTime end start) / (fromIntegral times))
+       putStrLn $ "It took " ++ timeTaken ++ "\n"
 
-factorUsingECMParallel :: Integer -> IO (Maybe Integer)
-factorUsingECMParallel = computeEagerly lenstraECMParallelSmartBound
+-- fix buffering problem
+main = do (product, first, second) <- generateSemiPrime 20
+          putStrLn $ show product ++ " = " ++ show first ++ " x " ++ show second ++ "\n"
+          mainDivision trialDivisionFull product "trial division"
+          mainDivision ecmStandardFull product "ECM Standard"
+          mainDivision ecmParallelFull product "ECM Parallel"
 
--- generateProductTwoPrimes bitSize
---     = do updateIORandomGenerator
---          stdGen1 <- getStdGen
---          let pg = primeGenerator stdGen1 bitSize
---          updateIORandomGenerator
---          stdGen2 <- getStdGen
---          let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
---          return (prime1 * prime2, prime1, prime2)
-
--- benchmarkNonParallel product
---     = bench "Non parallel" (nfIO $ performAction trialFactoring product)
-
--- benchmarkParallel product
---     = bench "Parallel" (nfIO $ performAction trialFactoringParallel product)
-    
--- performAction action product
---     = do factor <- action product
---          return ()
-
--- initialPerformAction action product
---     = do factor <- action product
---          putStrLn $ "found factor "++show (fromJust factor)
-
-main = do putStrLn "Hello, World!"
-
--- main = do putStrLn "Give me bit size"
---           bitSize <- liftM read getLine
---           (product, prime1, prime2) <- generateProductTwoPrimes bitSize
---           putStrLn $ show product++" = "++show prime1++" x "++show prime2
---           initialPerformAction trialFactoringParallel product
---           initialPerformAction trialFactoring product
---           defaultMain [benchmarkNonParallel product, 
---                        benchmarkParallel product]
->>>>>>> 5a923a2e6b59a71c47488b528219d275a25bc314
 
 
