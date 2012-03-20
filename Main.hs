@@ -18,6 +18,7 @@ import Data.Maybe
 import System.Random
 import IO
 import Data.Time
+--import Criterion.Main
 
 import Factoring.Lenstra
 import Factoring.TrialDivision
@@ -78,7 +79,6 @@ experimentRun bitSize
        divisionRun ecmParallelFull product "ECM Parallel"
        putStrLn " "
 
-main = do let bitSizes = [1..20]
+main = do let bitSizes = [1..40]
           mapM_ experimentRun bitSizes
-
 
