@@ -16,60 +16,65 @@ module Main where
 import Control.Monad
 import Data.Maybe
 import System.Random
+import IO
+import Data.Time
 --import Criterion.Main
-import System( getArgs )
 
 import Factoring.Lenstra
+import Factoring.TrialDivision
 import Primes.MillerRabin
 import Generator.RandomGenerator
 import Generator.Generator
 
-computeEagerly function argument
-    = do output <- return $! function argument
-         return output
+ecmGenericFull method number
+  = do updateIORandomGenerator
+       stdGen <- getStdGen
+       let isPrime = millerRabinPrimalityTest stdGen number
+       if isPrime 
+         then return [number]
+         else do maybeFactor <- return $! method number
+                 if isNothing maybeFactor 
+                   then return [number]
+                   else do leftPart <- ecmStandardFull $ fromJust maybeFactor
+                           rightPart <- ecmStandardFull $ number `div` (fromJust maybeFactor)
+                           return (leftPart ++ rightPart)
 
-ecmStandardFull :: StdGen -> Integer -> [Integer]
-ecmStandardFull randomGen number
-  = error "To be implemented"
+ecmStandardFull = ecmGenericFull lenstraECMSmartBound
+ecmParallelFull = ecmGenericFull lenstraECMParallelSmartBound
 
-factorUsingECMStandard :: Integer -> IO (Maybe Integer)
-factorUsingECMStandard = computeEagerly lenstraECMSmartBound
+trialDivisionFull num = return $! trialDivision num
 
-factorUsingECMParallel :: Integer -> IO (Maybe Integer)
-factorUsingECMParallel = computeEagerly lenstraECMParallelSmartBound
+generateSemiPrime bitSize
+     = do updateIORandomGenerator
+          stdGen1 <- getStdGen
+          let pg = primeGenerator stdGen1 bitSize
+          updateIORandomGenerator
+          stdGen2 <- getStdGen
+          let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
+          return (prime1 * prime2, prime1, prime2)
 
--- generateProductTwoPrimes bitSize
---     = do updateIORandomGenerator
---          stdGen1 <- getStdGen
---          let pg = primeGenerator stdGen1 bitSize
---          updateIORandomGenerator
---          stdGen2 <- getStdGen
---          let ([prime1, prime2], state) = runGeneratorNTimes 2 pg stdGen2
---          return (prime1 * prime2, prime1, prime2)
+-- action should always give the same output
+runActionNTimes action input times
+  = liftM head $ mapM action $ take times $ repeat input
 
--- benchmarkNonParallel product
---     = bench "Non parallel" (nfIO $ performAction trialFactoring product)
+times = 5
 
--- benchmarkParallel product
---     = bench "Parallel" (nfIO $ performAction trialFactoringParallel product)
-    
--- performAction action product
---     = do factor <- action product
---          return ()
+mainDivision method number methodString
+  = do putStr $ "Using " ++ methodString ++ " ..."
+       hFlush stdout
+       start <- getCurrentTime
+       factors <- runActionNTimes method number times -- it should be eager
+       end <- getCurrentTime
+       putStrLn $ " found factors " ++ show factors
+       let timeTaken = show ((diffUTCTime end start) / (fromIntegral times))
+       putStrLn $ "It took " ++ timeTaken ++ "\n"
 
--- initialPerformAction action product
---     = do factor <- action product
---          putStrLn $ "found factor "++show (fromJust factor)
+-- fix buffering problem
+main = do (product, first, second) <- generateSemiPrime 20
+          putStrLn $ show product ++ " = " ++ show first ++ " x " ++ show second ++ "\n"
+          mainDivision trialDivisionFull product "trial division"
+          mainDivision ecmStandardFull product "ECM Standard"
+          mainDivision ecmParallelFull product "ECM Parallel"
 
-main = do putStrLn "Hello, World!"
-
--- main = do putStrLn "Give me bit size"
---           bitSize <- liftM read getLine
---           (product, prime1, prime2) <- generateProductTwoPrimes bitSize
---           putStrLn $ show product++" = "++show prime1++" x "++show prime2
---           initialPerformAction trialFactoringParallel product
---           initialPerformAction trialFactoring product
---           defaultMain [benchmarkNonParallel product, 
---                        benchmarkParallel product]
 
 
