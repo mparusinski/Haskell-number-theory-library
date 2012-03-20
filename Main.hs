@@ -14,7 +14,7 @@ Portability :  portable
 module Main where
 
 import Control.Monad
-import System.Time
+import System.CPUTime
 import System.Random
 
 import Factoring.Lenstra
@@ -22,22 +22,22 @@ import Primes.MillerRabin
 import Generator.RandomGenerator
 import Generator.Generator
 
-getTimeMS 
-    = do (TOD s p) <- getClockTime
-         return $ fromIntegral (s * 1000 + p `div` 10^6)
+-- getTimeMS 
+--     = do (TOD s p) <- getClockTime
+--          return $ fromIntegral (s * 1000 + p `div` 10^6)
 
 performTrialFactoring num
-    = do before <- getTimeMS
+    = do before <- getCPUTime
          factor <- return $! lenstraECMSmartBound num
-         after  <- getTimeMS
-         let diff = after - before
+         after  <- getCPUTime
+         let diff = fromIntegral (after - before) / 10^6
          return (factor, diff)
 
 performTrialFactoringParallel num
-    = do before <- getTimeMS
+    = do before <- getCPUTime
          factor <- return $! lenstraECMParallelSmartBound num
-         after  <- getTimeMS
-         let diff = after - before
+         after  <- getCPUTime
+         let diff = fromIntegral (after - before) / 10^6
          return (factor, diff)
 
 generateProductTwoPrimes bitSize
