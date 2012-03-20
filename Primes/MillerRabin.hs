@@ -22,12 +22,13 @@ import System.Random
 import Data.List
 import Control.Monad
 
+-- returns true if is witness for primality
 millerRabinWitnessTest :: Integer -> Integer -> Bool
 millerRabinWitnessTest candidate witness
     = test1 || test2
     where (d, r) = removePowersOfTwo (candidate - 1)
           modWit = embed witness (flip mod candidate)
-          test1  = (representant first) `elem` [1,candidate - 1]
+          test1  = (representant first) `elem` [1, candidate - 1]
           test2  = evenPowersLoop first 0 (r-1)
           first  = mod_pow modWit d
           evenPowersLoop number counter steps
@@ -41,18 +42,17 @@ millerRabinWitnessTest candidate witness
 doAllWitnessTests list candidate
     = all (millerRabinWitnessTest candidate) list
 
--- using the fact that small candidates speeds up the algorithm very quickly
+-- using the fact that small witnesses speeds up the algorithm very quickly
 millerRabinPrimalityTest :: StdGen -> Integer -> Bool
 millerRabinPrimalityTest rgState candidate
     | candidate <= 1 = False
     | candidate <= 3 = True
     | candidate == 4 = False
-    | otherwise      = doAllWitnessTests candidateList candidate
-    where randomGen     = RG.boundRandGenerator RG.simpleRandGenerator 1 upBound 
-          numOfElems    = 20
-          upBound       = (2 ^ 32) `div` (numOfElems + 1)
-          numberGen     = MG.createMonotonicGenerator MG.Positive randomGen
-          candidateList = generateListFromGenerator numOfElems numberGen (rgState,1)
+    | otherwise      = doAllWitnessTests witnessList candidate
+    where witnessGen  = RG.boundRandGenerator RG.simpleRandGenerator 1 upBound 
+          numOfElems  = 20
+          upBound     = min (candidate -1) (2 ^ 32)
+          witnessList = generateListFromGenerator numOfElems witnessGen rgState
 
 getSmallestNumOfBitSize :: Int -> Integer
 getSmallestNumOfBitSize bitSize
