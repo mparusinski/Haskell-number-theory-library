@@ -18,7 +18,6 @@ import Data.Maybe
 import System.Random
 import IO
 import Data.Time
---import Criterion.Main
 
 import Factoring.Lenstra
 import Factoring.TrialDivision
