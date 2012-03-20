@@ -59,7 +59,7 @@ runActionNTimes action input times
 
 times = 5
 
-mainDivision method number methodString
+divisionRun method number methodString
   = do putStr $ "Using " ++ methodString ++ " ..."
        hFlush stdout
        start <- getCurrentTime
@@ -69,12 +69,17 @@ mainDivision method number methodString
        let timeTaken = show ((diffUTCTime end start) / (fromIntegral times))
        putStrLn $ "It took " ++ timeTaken ++ "\n"
 
--- fix buffering problem
-main = do (product, first, second) <- generateSemiPrime 20
-          putStrLn $ show product ++ " = " ++ show first ++ " x " ++ show second ++ "\n"
-          mainDivision trialDivisionFull product "trial division"
-          mainDivision ecmStandardFull product "ECM Standard"
-          mainDivision ecmParallelFull product "ECM Parallel"
+experimentRun bitSize 
+  = do putStrLn "===================================================="
+       putStrLn $ "Running experiment for bit size " ++ show bitSize
+       (product, first, second) <- generateSemiPrime bitSize
+       putStrLn $ show product ++ " = " ++ show first ++ " x " ++ show second ++ "\n"
+       divisionRun trialDivisionFull product "trial division"
+       divisionRun ecmStandardFull product "ECM Standard"
+       divisionRun ecmParallelFull product "ECM Parallel"
+       putStrLn " "
 
+main = do let bitSizes = [1..20]
+          mapM_ experimentRun bitSizes
 
 
